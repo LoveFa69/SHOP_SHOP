@@ -7,24 +7,19 @@ import CreateProduct from '../components/modals/CreateProduct';
 import Pages from '../components/Pages';
 import { deleteType, deleteProduct } from '../http/productAPI';
 import { toast } from 'react-toastify';
-
 const Admin = observer(() => {
     const { product } = useContext(Context);
-
     const [typeVisible, setTypeVisible] = useState(false);
     const [productVisible, setProductVisible] = useState(false);
-
     // Загружаем данные при монтировании компонента
     useEffect(() => {
         product.fetchTypesAction();
         product.fetchProductsAction();
-    }, [product]);
-    
+    }, [product]);  
     // Обновляем список товаров при смене страницы
     useEffect(() => {
         product.fetchProductsAction();
     }, [product.page]);
-
     const handleDeleteType = async (id) => {
         if (window.confirm('Вы уверены, что хотите удалить этот тип?')) {
             try {
@@ -36,7 +31,6 @@ const Admin = observer(() => {
             }
         }
     };
-
     const handleDeleteProduct = async (id) => {
         if (window.confirm('Вы уверены, что хотите удалить этот товар?')) {
             try {
@@ -48,7 +42,6 @@ const Admin = observer(() => {
             }
         }
     };
-
     return (
         <Container className="my-5">
             <h2 className="text-center mb-4">Административная панель</h2>
@@ -90,7 +83,6 @@ const Admin = observer(() => {
                     </Table>
                     <Pages />
                 </Tab>
-
                 <Tab eventKey="types" title="Управление типами">
                     <div className="d-flex justify-content-end my-3">
                         <Button variant="primary" onClick={() => setTypeVisible(true)}>
@@ -113,7 +105,6 @@ const Admin = observer(() => {
                     </ListGroup>
                 </Tab>
             </Tabs>
-
             <CreateType show={typeVisible} onHide={() => setTypeVisible(false)} />
             <CreateProduct show={productVisible} onHide={() => setProductVisible(false)} />
         </Container>

@@ -6,7 +6,7 @@ const User = sequelize.define('user', {
     email: { type: DataTypes.STRING, unique: true, allowNull: false },
     password: { type: DataTypes.STRING, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: "USER" },
-        referralCode: { type: DataTypes.STRING, unique: true, allowNull: false },
+    referralCode: { type: DataTypes.STRING, unique: true, allowNull: false },
     // ID пользователя, который пригласил данного пользователя (если есть)
     referrerId: { type: DataTypes.INTEGER, allowNull: true }
 });
