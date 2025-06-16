@@ -1,0 +1,39 @@
+
+.product-card {
+    border-radius: 15px !important; /* !important нужен, чтобы перебить стили bootstrap */
+    border: none !important;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow: hidden; /* Обрезает все, что выходит за скругленные углы */
+    text-decoration: none; /* Убирает подчеркивание у ссылок */
+    color: inherit; /* Наследует цвет текста */
+}
+
+.product-card:hover {
+    transform: translateY(-5px); /* Приподнимаем карточку при наведении */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.product-card-img {
+    height: 200px;
+    object-fit: cover; /* Картинка будет красиво заполнять блок, сохраняя пропорции */
+}
+
+.product-title {
+    font-size: 1.1rem;
+    font-weight: 700; /* Более жирный шрифт для названия */
+    /* Ограничение названия в две строки */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 44px; /* Занимаем место под две строки, чтобы карточки не "прыгали" */
+}
+.product-card.out-of-stock {
+    opacity: 0.6;
+}
+.product-card.out-of-stock:hover {
+    opacity: 0.7;
+    transform: none; /* Убираем эффект приподнимания */
+    box-shadow: none;
+}

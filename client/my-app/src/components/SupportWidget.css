@@ -1,0 +1,84 @@
+/* --- Кнопка-триггер --- */
+.support-widget-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    transition: transform 0.2s ease-in-out;
+}
+
+.support-widget-button:hover {
+    transform: scale(1.1);
+}
+
+/* --- Контейнер для формы --- */
+.support-widget-form {
+    position: fixed;
+    bottom: 100px; /* Располагаем над кнопкой */
+    right: 30px;
+    width: 350px;
+    max-width: calc(100% - 60px);
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+    z-index: 999;
+
+    /* --- Магия анимации --- */
+    opacity: 0;
+    transform: translateY(20px);
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
+}
+
+/* --- Стили для ОТКРЫТОГО состояния --- */
+.support-widget-form.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* --- Внутреннее оформление виджета --- */
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+.widget-header h5 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.widget-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+.widget-close-btn:hover {
+    opacity: 1;
+}
+
+.widget-body {
+    padding: 1.2rem;
+}
+
+.widget-body .form-label {
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+}
