@@ -4,14 +4,15 @@ import { fetchProducts, fetchTypes, fetchSpecialProducts } from '../http/product
 export default class ProductStore {
     _types = [];
     _products = [];
-    _specialProducts = []; // Состояние для спецпредложений
+    _specialProducts = [];
     _selectedType = {};
     _page = 1;
     _totalCount = 0;
-    _limit = 12;
+    _limit = 8;
     _loading = false;
     _error = null;
     _searchQuery = '';
+    _sortBy = 'default'; // Новое состояние для сортировки
 
     constructor() {
         makeAutoObservable(this);
@@ -27,21 +28,21 @@ export default class ProductStore {
     setLoading(loading) { this._loading = loading; }
     setError(error) { this._error = error; }
     setSearchQuery(query) { this.setPage(1); this._searchQuery = query; }
+    setSortBy(sortType) { this.setPage(1); this._sortBy = sortType; } // Новый action
 
     // Async Actions
     async fetchTypesAction() {
         try {
             const data = await fetchTypes();
             this.setTypes(data);
-        } catch (e) {
-            console.error('Ошибка загрузки типов', e);
-        }
+        } catch (e) { console.error('Ошибка загрузки типов', e); }
     }
 
     async fetchProductsAction() {
         this.setLoading(true);
         try {
-            const data = await fetchProducts(this._selectedType.id, this._page, this._limit, this._searchQuery);
+            // Передаем this._sortBy в API
+            const data = await fetchProducts(this._selectedType.id, this._page, this._limit, this._searchQuery, this._sortBy);
             this.setProducts(data.rows);
             this.setTotalCount(data.count);
         } catch (e) {
@@ -55,9 +56,7 @@ export default class ProductStore {
         try {
             const data = await fetchSpecialProducts();
             this.setSpecialProducts(data);
-        } catch (e) {
-            console.error('Ошибка загрузки спецпредложений', e);
-        }
+        } catch (e) { console.error('Ошибка загрузки спецпредложений', e); }
     }
 
     // Getters
@@ -71,4 +70,5 @@ export default class ProductStore {
     get isLoading() { return this._loading; }
     get error() { return this._error; }
     get searchQuery() { return this._searchQuery; }
+    get sortBy() { return this._sortBy; } // Новый getter
 }

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import { Container, Row, Col, Spinner } from "react-bootstrap";
+import { Container, Row, Col, Spinner, Dropdown } from "react-bootstrap"; // Добавили Dropdown
 import TypeBar from "../components/TypeBar";
 import ProductList from "../components/ProductList";
 import { observer } from "mobx-react-lite";
@@ -11,29 +11,35 @@ import SpecialOffers from "../components/SpecialOffers";
 const Shop = observer(() => {
   const { product } = useContext(Context);
 
-  // --- ЕДИНЫЙ, ГЛАВНЫЙ useEffect ДЛЯ ЗАГРУЗКИ ВСЕХ ДАННЫХ ---
-  useEffect(() => {
-    // Этот эффект будет срабатывать при ПЕРВОЙ загрузке страницы
-    // и при ЛЮБОМ изменении фильтров (тип, поиск, страница).
+  // Опции для выпадающего списка сортировки
+  const sortOptions = [
+    { value: 'default', name: 'По популярности (новые)' },
+    { value: 'price_asc', name: 'Сначала дешевые' },
+    { value: 'price_desc', name: 'Сначала дорогие' },
+  ];
 
-    // Загружаем типы и спецпредложения. Они не зависят от фильтров,
-    // но мы их все равно включаем в этот хук для согласованности.
+  // Этот useEffect загружает данные, которые не зависят от фильтров.
+  // Он сработает один раз при загрузке страницы.
+  useEffect(() => {
     product.fetchTypesAction();
     product.fetchSpecialProductsAction();
-    
-    // Загружаем основной каталог с учетом всех фильтров.
-    product.fetchProductsAction();
+  }, [product]);
 
-  }, [product, product.page, product.selectedType, product.searchQuery]); // Следим за всеми зависимостями
+  // Этот useEffect загружает основной каталог товаров.
+  // Он будет реагировать на любые изменения в фильтрах, поиске, пагинации и сортировке.
+  useEffect(() => {
+    product.fetchProductsAction();
+  }, [product, product.page, product.selectedType, product.searchQuery, product.sortBy]);
+
+  // Обработчик для смены типа сортировки
+  const handleSortChange = (sortValue) => {
+    product.setSortBy(sortValue);
+  };
 
   return (
     <Container className="mt-4">
       <PromoBanner />
       
-      {/* 
-        Теперь компонент SpecialOffers будет получать обновленные данные 
-        из product.specialProducts, как только они загрузятся.
-      */}
       <SpecialOffers products={product.specialProducts} />
       
       <Row className="mt-4">
@@ -42,12 +48,32 @@ const Shop = observer(() => {
           <TypeBar />
         </Col>
         <Col md={9}>
-          <h2 className="mb-4">Наш Каталог</h2>
-          {/* 
-            Компонент ProductList также будет автоматически обновляться, 
-            когда изменятся данные в product.products.
-          */}
-          {product.isLoading ? <Spinner animation="border" /> : <ProductList />}
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2>Наш Каталог</h2>
+
+            {/* Выпадающий список для сортировки */}
+            <Dropdown onSelect={handleSortChange}>
+              <Dropdown.Toggle variant="outline-secondary" id="dropdown-sort">
+                {/* Находим и отображаем имя текущей выбранной сортировки */}
+                {sortOptions.find(opt => opt.value === product.sortBy)?.name || 'Сортировка'}
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu>
+                {sortOptions.map(opt => (
+                  <Dropdown.Item key={opt.value} eventKey={opt.value} active={product.sortBy === opt.value}>
+                    {opt.name}
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
+          
+          {product.isLoading ? (
+            <div className="text-center"><Spinner animation="border" /></div>
+          ) : (
+            <ProductList />
+          )}
+          
           <Pages />
         </Col>
       </Row>
