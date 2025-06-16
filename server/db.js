@@ -1,21 +1,28 @@
+// server/db.js
+
 const { Sequelize } = require('sequelize');
 
-// Проверяем, есть ли переменная DATABASE_URL (для Render)
+let sequelize;
+
+// Проверяем, есть ли переменная DATABASE_URL (для хостинга)
 if (process.env.DATABASE_URL) {
-  // Конфигурация для продакшена (Render)
-  module.exports = new Sequelize(process.env.DATABASE_URL, {
+  // Конфигурация для продакшена (Neon, Render и т.д.)
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     protocol: 'postgres',
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false, // Эта опция важна для Render
+        // Для Neon и других хостингов с доверенными сертификатами эта опция не нужна.
+        // Но ее наличие не помешает и сделает код более универсальным.
+        // Если будут проблемы с подключением, можно будет ее раскомментировать.
+        // rejectUnauthorized: false 
       },
     },
   });
 } else {
-  // Конфигурация для локальной разработки (оставляем твой старый вариант)
-  module.exports = new Sequelize(
+  // Конфигурация для локальной разработки
+  sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
     process.env.DB_PASSWORD,
@@ -26,3 +33,5 @@ if (process.env.DATABASE_URL) {
     }
   );
 }
+
+module.exports = sequelize;
