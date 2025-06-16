@@ -13,7 +13,6 @@ class ProductControl {
             }
 
             const { img } = req.files;
-            // Добавляем isSpecial в список получаемых полей
             const { name, price, oldPrice, typeId, quantity, isSpecial, info } = req.body;
 
             if (!name || !price || !typeId) {
@@ -29,7 +28,7 @@ class ProductControl {
                 typeId,
                 img: fileName,
                 quantity: quantity || 0,
-                isSpecial: isSpecial === 'true' || false, // Преобразуем строку 'true' в boolean
+                isSpecial: isSpecial === 'true' || false,
             };
 
             if (oldPrice) {
@@ -67,11 +66,15 @@ class ProductControl {
             const { typeId, name, limit = 9, page = 1 } = req.query;
             const offset = page * limit - limit;
             
+            // --- ИСПРАВЛЕННАЯ ЛОГИКА ---
             let whereClause = {
-                // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
-                // По умолчанию исключаем спецпредложения из основного каталога
-                isSpecial: false 
+                // Выбираем товары, у которых isSpecial равно false ИЛИ isSpecial равно NULL
+                [Op.or]: [
+                    { isSpecial: false },
+                    { isSpecial: null }
+                ]
             };
+            // ---------------------------
 
             if (typeId) {
                 whereClause.typeId = typeId;
@@ -93,12 +96,11 @@ class ProductControl {
         }
     }
 
-    // --- НОВЫЙ МЕТОД ---
     async getSpecials(req, res, next) {
         try {
             const specialProducts = await Product.findAll({
                 where: { isSpecial: true },
-                limit: 4 // Ограничиваем количество спецпредложений
+                limit: 4
             });
             return res.json(specialProducts);
         } catch (e) {
