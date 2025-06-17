@@ -66,6 +66,7 @@ const NavBar = observer(() => {
                                 <NavDropdown.Item onClick={() => navigate(PROFILE_ROUTE)}>Личный кабинет</NavDropdown.Item>
                                 {isAdmin && <NavDropdown.Item onClick={() => navigate(ADMIN_ROUTE)}>Админ-панель</NavDropdown.Item>}
                                 <NavDropdown.Item onClick={() => navigate(ORDERS_ROUTE)}>Мои заказы</NavDropdown.Item>
+                                <NavDropdown.Item onClick={() => navigate(FAVORITES_ROUTE)}>Избранное</NavDropdown.Item>
                                 <NavDropdown.Divider />
                                 <NavDropdown.Item onClick={logOut}>Выйти</NavDropdown.Item>
                             </NavDropdown>

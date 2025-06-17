@@ -63,6 +63,10 @@ const OrderProduct = sequelize.define('order_product', {
     price: { type: DataTypes.INTEGER, allowNull: false },
 });
 
+const UserFavorites = sequelize.define('user_favorites', {});
+User.belongsToMany(Product, { through: UserFavorites, as: 'favoriteProducts' });
+Product.belongsToMany(User, { through: UserFavorites, as: 'favoritedBy' });
+
 // --- СВЯЗИ ---
 
 User.hasOne(Basket, { foreignKey: 'userId' });
@@ -99,5 +103,6 @@ module.exports = {
     Rating,
     ProductInfo,
     Order,
+    UserFavorites,
     OrderProduct
 };

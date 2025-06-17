@@ -42,7 +42,7 @@ const Footer = () => {
                     <Col md={3}>
                         <h5>Мы в соцсетях</h5>
                         <div className="social-icons">
-                            <a href="https://vk.com" target="_blank" rel="noopener noreferrer" className="social-icon">
+                            <a href="https://vk.com/club225184871" target="_blank" rel="noopener noreferrer" className="social-icon">
                                 <FaVk size={24} />
                             </a>
                             <a href="https://t.me" target="_blank" rel="noopener noreferrer" className="social-icon">

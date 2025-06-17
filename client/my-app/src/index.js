@@ -5,6 +5,7 @@ import UserStore from './store/UserStore';
 import ProductStore from './store/ProductStore';
 import TypeStore from './store/TypeStore'; // ДОБАВЛЕНО
 import basketStore from './store/BasketStore'; // ДОБАВЛЕНО
+import favoritesStore from './store/FavoritesStore';
 
 export const Context = createContext(null);
 
@@ -14,8 +15,9 @@ root.render(
   <Context.Provider value={{
     user: new UserStore(),
     product: new ProductStore(),
-    type: new TypeStore(), // ДОБАВЛЕНО
-    basket: basketStore,  // ДОБАВЛЕНО
+    type: new TypeStore(), 
+    basket: basketStore, 
+    favorites: favoritesStore 
   }}>
     <App />
   </Context.Provider>

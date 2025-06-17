@@ -10,10 +10,10 @@ import './App.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SupportWidget from './components/SupportWidget';
-import Footer from './components/Footer'; // <-- ИМПОРТИРУЕМ ФУТЕР
+import Footer from './components/Footer';
 
 const App = observer(() => {
-    const { user } = useContext(Context);
+    const { user, favorites } = useContext(Context); // Добавляем favorites store
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -21,12 +21,13 @@ const App = observer(() => {
             .then(userData => {
                 user.setUser(userData);
                 user.setIsAuth(true);
+                favorites.fetchFavoritesAction(); // Загружаем избранное при успешной авторизации
             })
             .catch(() => {
                 user.setIsAuth(false);
             })
             .finally(() => setLoading(false));
-    }, [user]);
+    }, [user, favorites]); // Добавляем favorites в зависимости
 
     if (loading) {
         return (
@@ -45,7 +46,7 @@ const App = observer(() => {
                 </main>
                 <SupportWidget />
                 <ToastContainer position="bottom-right" autoClose={3000} />
-                <Footer /> {/* <-- ДОБАВЛЯЕМ ФУТЕР В КОНЕЦ */}
+                <Footer />
             </div>
         </BrowserRouter>
     );

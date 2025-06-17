@@ -8,23 +8,25 @@ import { toast } from 'react-toastify';
 import StarRating from '../components/StarRating';
 import ProductItem from '../components/ProductItem';
 import { BsCheckCircleFill, BsXCircleFill } from 'react-icons/bs';
+import { FaHeart, FaRegHeart } from 'react-icons/fa'; // Иконки для избранного
 
 const ProductPage = observer(() => {
-    const { product: productStore, basket, user } = useContext(Context);
+    // Получаем все нужные сторы из контекста
+    const { product: productStore, basket, user, favorites } = useContext(Context);
     const { id } = useParams();
 
-    // Состояния для текущего товара и его отзывов
+    // Состояния для данных страницы
     const [product, setProduct] = useState({ info: [] });
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Состояния для формы нового отзыва
+    // Состояния для формы отзыва
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Загрузка данных о товаре и отзывах при монтировании или смене ID
+    // Функция для загрузки данных о товаре и отзывах
     const loadData = () => {
         setLoading(true);
         Promise.all([
@@ -45,8 +47,7 @@ const ProductPage = observer(() => {
     // Обработчик отправки отзыва
     const handleAddReview = async () => {
         if (rating === 0) {
-            toast.error('Пожалуйста, поставьте оценку');
-            return;
+            return toast.error('Пожалуйста, поставьте оценку');
         }
         setIsSubmitting(true);
         try {
@@ -54,12 +55,20 @@ const ProductPage = observer(() => {
             toast.success('Спасибо за ваш отзыв!');
             setRating(0);
             setComment('');
-            loadData(); // Перезагружаем данные, чтобы увидеть новый отзыв и рейтинг
+            loadData(); // Перезагружаем данные для обновления
         } catch (e) {
             toast.error(e.response?.data?.message || 'Ошибка при добавлении отзыва');
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Обработчик для кнопки "Избранное"
+    const handleFavoriteClick = () => {
+        if (!user.isAuth) {
+            return toast.info('Войдите, чтобы добавлять товары в избранное');
+        }
+        favorites.toggleFavoriteAction(product.id);
     };
     
     // Фильтр для похожих товаров
@@ -72,7 +81,6 @@ const ProductPage = observer(() => {
 
     return (
         <Container className="my-5">
-            {/* --- Основная информация о товаре --- */}
             <Row>
                 <Col md={5}>
                     <Image src={process.env.REACT_APP_API_URL + '/' + product.img} fluid rounded />
@@ -90,14 +98,24 @@ const ProductPage = observer(() => {
                     <div className="my-3 fs-5">
                         {product.quantity > 0 ? <span className="text-success fw-bold"><BsCheckCircleFill className="me-2" />В наличии</span> : <span className="text-muted fw-bold"><BsXCircleFill className="me-2" />Нет в наличии</span>}
                     </div>
-                    <Button variant="success" size="lg" onClick={() => basket.addItem(product)} disabled={product.quantity === 0}>
-                        {product.quantity > 0 ? 'Добавить в корзину' : 'Нет в наличии'}
-                    </Button>
-                    {product.info.length > 0 && <div className="mt-4"><h4>Характеристики</h4><ul className="list-group list-group-flush">{product.info.map(i => <li key={i.id} className="list-group-item px-0 d-flex justify-content-between"><span>{i.title}</span><strong>{i.description}</strong></li>)}</ul></div>}
+                    
+                    <div className="d-flex align-items-center gap-2 mt-4">
+                        <Button variant="success" size="lg" onClick={() => basket.addItem(product)} disabled={product.quantity === 0}>
+                            {product.quantity > 0 ? 'Добавить в корзину' : 'Нет в наличии'}
+                        </Button>
+                        <Button 
+                            variant="outline-danger" 
+                            size="lg" 
+                            onClick={handleFavoriteClick}
+                        >
+                            {favorites.isFavorite(product.id) ? <FaHeart/> : <FaRegHeart/>}
+                        </Button>
+                    </div>
+
+                    {product.info.length > 0 && <div className="mt-5"><h4>Характеристики</h4><ul className="list-group list-group-flush">{product.info.map(i => <li key={i.id} className="list-group-item px-0 d-flex justify-content-between"><span>{i.title}</span><strong>{i.description}</strong></li>)}</ul></div>}
                 </Col>
             </Row>
 
-            {/* --- Секция с отзывами --- */}
             <div className="my-5">
                 <hr />
                 <h3 className="my-4">Отзывы о товаре</h3>
@@ -121,33 +139,15 @@ const ProductPage = observer(() => {
                         <Col md={5}>
                             <h4>Оставить отзыв</h4>
                             <Form>
-                                <Form.Group className="mb-2">
-                                    <Form.Label>Ваша оценка:</Form.Label>
-                                    <StarRating rating={rating} setRating={setRating} interactive />
-                                </Form.Group>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Ваш комментарий:</Form.Label>
-                                    <Form.Control 
-                                        as="textarea" 
-                                        rows={3} 
-                                        value={comment} 
-                                        onChange={e => setComment(e.target.value)} 
-                                    />
-                                </Form.Group>
-                                <Button 
-                                    variant="primary" 
-                                    onClick={handleAddReview} 
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? 'Отправка...' : 'Отправить отзыв'}
-                                </Button>
+                                <Form.Group className="mb-2"><Form.Label>Ваша оценка:</Form.Label><StarRating rating={rating} setRating={setRating} interactive /></Form.Group>
+                                <Form.Group className="mb-3"><Form.Label>Ваш комментарий:</Form.Label><Form.Control as="textarea" rows={3} value={comment} onChange={e => setComment(e.target.value)} /></Form.Group>
+                                <Button variant="primary" onClick={handleAddReview} disabled={isSubmitting}>{isSubmitting ? 'Отправка...' : 'Отправить отзыв'}</Button>
                             </Form>
                         </Col>
                     )}
                 </Row>
             </div>
 
-            {/* --- Секция с похожими товарами --- */}
             {similarProducts.length > 0 && (
                 <div className="my-5">
                     <hr />
