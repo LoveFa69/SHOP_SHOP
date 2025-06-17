@@ -13,28 +13,27 @@ const CreateProduct = observer(({ show, onHide }) => {
     const [price, setPrice] = useState('');
     const [oldPrice, setOldPrice] = useState('');
     const [quantity, setQuantity] = useState(0);
+    const [unit, setUnit] = useState('шт.'); // Состояние для единиц измерения
     const [isSpecial, setIsSpecial] = useState(false);
     const [file, setFile] = useState(null);
     const [selectedType, setSelectedType] = useState(null);
     const [info, setInfo] = useState([]);
 
-    // Состояния для UI
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // Загружаем типы при открытии модального окна
         if (show) {
             product.fetchTypesAction().catch(() => setError('Не удалось загрузить типы'));
         }
     }, [show, product]);
 
-    // Функция для сброса всех полей и закрытия окна
     const handleClose = () => {
         setName('');
         setPrice('');
         setOldPrice('');
         setQuantity(0);
+        setUnit('шт.'); // Сброс единиц измерения
         setIsSpecial(false);
         setFile(null);
         setSelectedType(null);
@@ -43,13 +42,11 @@ const CreateProduct = observer(({ show, onHide }) => {
         onHide();
     };
 
-    // Функции для управления характеристиками
     const addInfo = () => setInfo([...info, { title: '', description: '', number: Date.now() }]);
     const removeInfo = (number) => setInfo(info.filter(item => item.number !== number));
     const changeInfo = (key, value, number) => setInfo(info.map(i => (i.number === number ? { ...i, [key]: value } : i)));
     const selectFile = (e) => setFile(e.target.files[0]);
 
-    // Функция создания продукта
     const addProduct = async () => {
         if (!name.trim() || !price || !selectedType || !file) {
             setError('Заполните все обязательные поля: Название, Цена, Тип и Изображение.');
@@ -66,6 +63,7 @@ const CreateProduct = observer(({ show, onHide }) => {
             }
             formData.append('quantity', `${quantity}`);
             formData.append('isSpecial', isSpecial);
+            formData.append('unit', unit); // Добавляем единицу измерения в formData
             formData.append('img', file);
             formData.append('typeId', selectedType.id);
             const validInfo = info.filter(i => i.title.trim() && i.description.trim());
@@ -73,13 +71,11 @@ const CreateProduct = observer(({ show, onHide }) => {
 
             await createProduct(formData);
             
-            // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ---
-            // Принудительно обновляем оба списка в хранилище
-            await product.fetchProductsAction(); // Обновляем основной каталог
-            await product.fetchSpecialProductsAction(); // Обновляем спецпредложения
+            await product.fetchProductsAction();
+            await product.fetchSpecialProductsAction();
 
             toast.success('Продукт успешно добавлен!');
-            handleClose(); // Закрываем и сбрасываем модальное окно
+            handleClose();
 
         } catch (e) {
             const errorMessage = e.response?.data?.message || 'Произошла ошибка при создании продукта';
@@ -101,7 +97,16 @@ const CreateProduct = observer(({ show, onHide }) => {
                         <Col md={6} className="mb-3"><Form.Control type="file" onChange={selectFile} /></Col>
                     </Row>
                     <Form.Group className="mb-3"><Form.Label>Название продукта</Form.Label><Form.Control placeholder="Введите название..." value={name} onChange={e => setName(e.target.value)} /></Form.Group>
-                    <Form.Group className="mb-3"><Form.Label>Количество на складе</Form.Label><Form.Control type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value) || 0)} min={0} /></Form.Group>
+                    
+                    <Row>
+                        <Col md={8}>
+                            <Form.Group className="mb-3"><Form.Label>Количество на складе</Form.Label><Form.Control type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value) || 0)} min={0} /></Form.Group>
+                        </Col>
+                        <Col md={4}>
+                            <Form.Group className="mb-3"><Form.Label>Ед. изм.</Form.Label><Form.Control placeholder="шт / кг / л" value={unit} onChange={e => setUnit(e.target.value)} /></Form.Group>
+                        </Col>
+                    </Row>
+
                     <Row>
                         <Col md={6}><Form.Group className="mb-3"><Form.Label>Текущая цена</Form.Label><Form.Control placeholder="Например, 99" type="number" value={price} onChange={e => setPrice(Number(e.target.value) || '')} required /></Form.Group></Col>
                         <Col md={6}><Form.Group className="mb-3"><Form.Label>Старая цена (без скидки)</Form.Label><Form.Control placeholder="Необязательно" type="number" value={oldPrice} onChange={e => setOldPrice(Number(e.target.value) || '')} /></Form.Group></Col>

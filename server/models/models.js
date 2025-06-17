@@ -29,6 +29,7 @@ const Product = sequelize.define('product', {
     img: { type: DataTypes.STRING, allowNull: false },
     typeId: { type: DataTypes.INTEGER },
     quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    unit: { type: DataTypes.STRING, allowNull: false, defaultValue: 'шт.' },
     isSpecial: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
 

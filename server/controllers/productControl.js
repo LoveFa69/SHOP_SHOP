@@ -29,6 +29,7 @@ class ProductControl {
                 img: fileName,
                 quantity: quantity || 0,
                 isSpecial: isSpecial === 'true' || false,
+                unit: unit || 'шт.',
             };
 
             if (oldPrice) {
