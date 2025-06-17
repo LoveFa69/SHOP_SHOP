@@ -2,12 +2,12 @@ import React, { useContext } from "react";
 import { Navbar, Container, Nav, Button, Badge, Form, NavDropdown } from "react-bootstrap";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Context } from "../index";
-import { ADMIN_ROUTE, LOGIN_ROUTE, SHOP_ROUTE, BASKET_ROUTE, ORDERS_ROUTE, PROFILE_ROUTE } from "../utils/consts";
+import { ADMIN_ROUTE, LOGIN_ROUTE, SHOP_ROUTE, BASKET_ROUTE, ORDERS_ROUTE, PROFILE_ROUTE, FAVORITES_ROUTE } from "../utils/consts";
 import { observer } from "mobx-react-lite";
 import { FaShoppingCart, FaSearch, FaUserCircle } from "react-icons/fa";
 
 const NavBar = observer(() => {
-    const { user, basket, product } = useContext(Context);
+    const { user, basket, product, favorites } = useContext(Context);
     const navigate = useNavigate();
 
     const logOut = () => {
@@ -15,6 +15,7 @@ const NavBar = observer(() => {
         user.setIsAuth(false);
         localStorage.removeItem('token');
         basket.clearBasket();
+        favorites.clearFavorites(); // Очищаем избранное при выходе
         navigate(LOGIN_ROUTE);
     };
 

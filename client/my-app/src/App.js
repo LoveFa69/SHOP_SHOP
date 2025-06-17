@@ -13,21 +13,25 @@ import SupportWidget from './components/SupportWidget';
 import Footer from './components/Footer';
 
 const App = observer(() => {
-    const { user, favorites } = useContext(Context); // Добавляем favorites store
+    const { user, favorites } = useContext(Context);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        check()
-            .then(userData => {
-                user.setUser(userData);
-                user.setIsAuth(true);
-                favorites.fetchFavoritesAction(); // Загружаем избранное при успешной авторизации
-            })
-            .catch(() => {
-                user.setIsAuth(false);
-            })
-            .finally(() => setLoading(false));
-    }, [user, favorites]); // Добавляем favorites в зависимости
+        // Проверяем токен при загрузке приложения
+        check().then(userData => {
+            user.setUser(userData);
+            user.setIsAuth(true);
+            // Если пользователь авторизован, загружаем его избранное
+            favorites.fetchFavoritesAction();
+        }).catch(() => {
+            // Если токен невалидный или его нет
+            user.setIsAuth(false);
+            // Очищаем локальные данные об избранном
+            favorites.clearFavorites();
+        }).finally(() => {
+            setLoading(false);
+        });
+    }, [user, favorites]);
 
     if (loading) {
         return (

@@ -25,7 +25,7 @@ const FavoritesPage = () => {
                     ))}
                 </Row>
             ) : (
-                <Alert variant="info">Ваш список избранного пуст.</Alert>
+                <Alert variant="info">Вы еще не добавили ни одного товара в избранное.</Alert>
             )}
         </Container>
     );

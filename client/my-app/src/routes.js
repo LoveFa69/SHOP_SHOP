@@ -38,10 +38,6 @@ export const authRoutes = [
         path: PROFILE_ROUTE, 
         Component: ProfilePage 
     },
-    { path: ORDERS_ROUTE, 
-        Component: OrdersPage
-     },
-
     { path: FAVORITES_ROUTE,
          Component: FavoritesPage 
         },
