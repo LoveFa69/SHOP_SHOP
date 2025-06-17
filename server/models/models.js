@@ -1,13 +1,14 @@
 const sequelize = require('../db');
 const { DataTypes } = require('sequelize');
 
+// --- ОПРЕДЕЛЕНИЕ МОДЕЛЕЙ ---
+
 const User = sequelize.define('user', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     email: { type: DataTypes.STRING, unique: true, allowNull: false },
     password: { type: DataTypes.STRING, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: "USER" },
-    referralCode: { type: DataTypes.STRING, unique: true, allowNull: false },
-    // ID пользователя, который пригласил данного пользователя (если есть)
+    referralCode: { type: DataTypes.STRING, unique: true, allowNull: true },
     referrerId: { type: DataTypes.INTEGER, allowNull: true }
 });
 
@@ -27,10 +28,9 @@ const Product = sequelize.define('product', {
     oldPrice: { type: DataTypes.INTEGER, allowNull: true },
     rating: { type: DataTypes.FLOAT, defaultValue: 0 },
     img: { type: DataTypes.STRING, allowNull: false },
-    typeId: { type: DataTypes.INTEGER },
     quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    isSpecial: { type: DataTypes.BOOLEAN, defaultValue: false },
     unit: { type: DataTypes.STRING, allowNull: false, defaultValue: 'шт.' },
-    isSpecial: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
 
 const Type = sequelize.define('type', {
@@ -48,10 +48,8 @@ const ProductInfo = sequelize.define('product_info', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     title: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.STRING, allowNull: false },
-    productId: { type: DataTypes.INTEGER }
 });
 
-// --- НОВЫЕ МОДЕЛИ ---
 const Order = sequelize.define('order', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     status: { type: DataTypes.STRING, defaultValue: 'В обработке' },
@@ -64,37 +62,52 @@ const OrderProduct = sequelize.define('order_product', {
     price: { type: DataTypes.INTEGER, allowNull: false },
 });
 
-const UserFavorites = sequelize.define('user_favorites', {});
-User.belongsToMany(Product, { through: UserFavorites, as: 'favoriteProducts' });
-Product.belongsToMany(User, { through: UserFavorites, as: 'favoritedBy' });
+// Промежуточная таблица для Избранного.
+// Sequelize автоматически добавит в нее `userId` и `productId`.
+const UserFavorites = sequelize.define('user_favorites', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true }
+});
 
-// --- СВЯЗИ ---
 
+// --- ОПРЕДЕЛЕНИЕ СВЯЗЕЙ ---
+
+// User <-> Basket
 User.hasOne(Basket, { foreignKey: 'userId' });
 Basket.belongsTo(User, { foreignKey: 'userId' });
 
+// User <-> Rating
 User.hasMany(Rating, { foreignKey: 'userId' });
 Rating.belongsTo(User, { foreignKey: 'userId' });
 
-Basket.belongsToMany(Product, { through: 'basket_product' });
-Product.belongsToMany(Basket, { through: 'basket_product' });
-
-Type.hasMany(Product, { foreignKey: 'typeId' });
-Product.belongsTo(Type, { foreignKey: 'typeId' });
-
-Product.hasMany(Rating, { foreignKey: 'productId' });
-Rating.belongsTo(Product, { foreignKey: 'productId' });
-
-Product.hasMany(ProductInfo, { as: 'info', foreignKey: 'productId' });
-ProductInfo.belongsTo(Product, { foreignKey: 'productId' });
-
-// --- НОВЫЕ СВЯЗИ ---
+// User <-> Order
 User.hasMany(Order, { foreignKey: 'userId' });
 Order.belongsTo(User, { foreignKey: 'userId' });
 
+// Basket <-> Product (через BasketProduct)
+Basket.belongsToMany(Product, { through: BasketProduct });
+Product.belongsToMany(Basket, { through: BasketProduct });
+
+// Type <-> Product
+Type.hasMany(Product, { foreignKey: 'typeId' });
+Product.belongsTo(Type, { foreignKey: 'typeId' });
+
+// Product <-> Rating
+Product.hasMany(Rating, { foreignKey: 'productId' });
+Rating.belongsTo(Product, { foreignKey: 'productId' });
+
+// Product <-> ProductInfo
+Product.hasMany(ProductInfo, { as: 'info', foreignKey: 'productId' });
+ProductInfo.belongsTo(Product, { foreignKey: 'productId' });
+
+// Order <-> Product (через OrderProduct)
 Order.belongsToMany(Product, { through: OrderProduct });
 Product.belongsToMany(Order, { through: OrderProduct });
 
+// User <-> Product (для Избранного, через UserFavorites)
+User.belongsToMany(Product, { through: UserFavorites, as: 'favoriteProducts' });
+Product.belongsToMany(User, { through: UserFavorites, as: 'favoritedBy' });
+
+// --- ЭКСПОРТ ВСЕХ МОДЕЛЕЙ ---
 module.exports = {
     User,
     Basket,
@@ -104,6 +117,6 @@ module.exports = {
     Rating,
     ProductInfo,
     Order,
-    UserFavorites,
-    OrderProduct
+    OrderProduct,
+    UserFavorites
 };

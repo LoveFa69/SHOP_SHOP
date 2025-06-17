@@ -7,33 +7,13 @@ const fs = require('fs');
 
 class ProductControl {
     async create(req, res, next) {
-        // --- НАЧАЛО БЛОКА ДИАГНОСТИКИ ---
-        console.log('--- НАЧАЛО ЗАПРОСА НА СОЗДАНИЕ ПРОДУКТА ---');
         try {
-            // Выводим в лог все, что пришло в теле запроса
-            console.log('Получено тело запроса (req.body):', JSON.stringify(req.body, null, 2));
-
-            // Проверяем наличие файлов
             if (!req.files || Object.keys(req.files).length === 0) {
-                console.error('ОШИБКА: req.files пуст или отсутствует.');
                 return next(ApiError.badRequest('Файл изображения не был загружен'));
             }
-            console.log('Получены файлы (req.files):', Object.keys(req.files));
-            const { img } = req.files;
-            
-            // --- ПУЛЕНЕПРОБИВАЕМОЕ ПОЛУЧЕНИЕ ДАННЫХ ---
-            // Обращаемся к свойствам req.body напрямую, без деструктуризации
-            const name = req.body.name;
-            const price = req.body.price;
-            const oldPrice = req.body.oldPrice;
-            const typeId = req.body.typeId;
-            const quantity = req.body.quantity;
-            const isSpecial = req.body.isSpecial;
-            const unit = req.body.unit; // Получаем unit
-            const info = req.body.info;
 
-            // Выводим в лог каждую переменную
-            console.log(`Имя: ${name}, Цена: ${price}, Старая цена: ${oldPrice}, ТипID: ${typeId}, Кол-во: ${quantity}, Спец: ${isSpecial}, Ед.изм: ${unit}`);
+            const { img } = req.files;
+            const { name, price, oldPrice, typeId, quantity, isSpecial, info } = req.body;
 
             if (!name || !price || !typeId) {
                 return next(ApiError.badRequest('Не все обязательные поля (название, цена, тип) были предоставлены'));
@@ -41,7 +21,7 @@ class ProductControl {
 
             let fileName = uuid.v4() + ".jpg";
             await img.mv(path.resolve(__dirname, '..', 'static', fileName));
-            
+
             const productData = {
                 name,
                 price,
@@ -49,8 +29,7 @@ class ProductControl {
                 img: fileName,
                 quantity: quantity || 0,
                 isSpecial: isSpecial === 'true' || false,
-                // Используем переменную unit, которая теперь точно определена (может быть undefined, но не вызовет ReferenceError)
-                unit: unit || 'шт.'
+                unit: unit || 'шт.',
             };
 
             if (oldPrice) {
@@ -72,26 +51,102 @@ class ProductControl {
                         ));
                     }
                 } catch (e) {
-                    console.error('Ошибка парсинга характеристик (info):', e.message);
+                    console.error('Ошибка парсинга характеристик (info):', e);
                 }
             }
 
-            console.log('Продукт успешно создан. ID:', product.id);
-            console.log('--- КОНЕЦ ЗАПРОСА ---');
             return res.json(product);
-
         } catch (e) {
-            console.error('!!! КРИТИЧЕСКАЯ ОШИБКА ВНУТРИ CATCH !!!');
-            console.error(e);
-            return next(ApiError.internal('Внутренняя ошибка сервера при создании продукта.'));
+            console.error('ПОЛНАЯ ОШИБКА В CATCH:', e);
+            return next(ApiError.internal('Ошибка при создании продукта: ' + e.message));
         }
     }
 
-    // Методы getAll, getSpecials, getOne, delete остаются без изменений
-    async getAll(req, res, next) { /* ... ваш код ... */ }
-    async getSpecials(req, res, next) { /* ... ваш код ... */ }
-    async getOne(req, res, next) { /* ... ваш код ... */ }
-    async delete(req, res, next) { /* ... ваш код ... */ }
+    async getAll(req, res, next) {
+        try {
+            const { typeId, name, limit = 9, page = 1 } = req.query;
+            const offset = page * limit - limit;
+            
+            // --- ИСПРАВЛЕННАЯ ЛОГИКА ---
+            let whereClause = {
+                // Выбираем товары, у которых isSpecial равно false ИЛИ isSpecial равно NULL
+                [Op.or]: [
+                    { isSpecial: false },
+                    { isSpecial: null }
+                ]
+            };
+            // ---------------------------
+
+            if (typeId) {
+                whereClause.typeId = typeId;
+            }
+
+            if (name) {
+                whereClause.name = { [Op.iLike]: `%${name}%` };
+            }
+
+            const products = await Product.findAndCountAll({
+                where: whereClause,
+                limit,
+                offset,
+                order: [['createdAt', 'DESC']]
+            });
+            return res.json(products);
+        } catch (e) {
+            next(ApiError.internal('Ошибка при получении продуктов: ' + e.message));
+        }
+    }
+
+    async getSpecials(req, res, next) {
+        try {
+            const specialProducts = await Product.findAll({
+                where: { isSpecial: true },
+                limit: 4
+            });
+            return res.json(specialProducts);
+        } catch (e) {
+            return next(ApiError.internal('Ошибка при получении спецпредложений'));
+        }
+    }
+
+    async getOne(req, res, next) {
+        try {
+            const { id } = req.params;
+            const product = await Product.findOne({
+                where: { id },
+                include: [{ model: ProductInfo, as: 'info' }]
+            });
+            if (!product) {
+                return next(ApiError.notFound('Продукт не найден'));
+            }
+            return res.json(product);
+        } catch (e) {
+            next(ApiError.internal('Ошибка при получении продукта: ' + e.message));
+        }
+    }
+
+    async delete(req, res, next) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                return next(ApiError.badRequest('Не указан ID продукта'));
+            }
+            const product = await Product.findOne({ where: { id } });
+            if (!product) {
+                return next(ApiError.notFound('Продукт для удаления не найден'));
+            }
+            await Product.destroy({ where: { id } });
+            if (product.img) {
+                const filePath = path.resolve(__dirname, '..', 'static', product.img);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+            return res.json({ message: 'Продукт успешно удален' });
+        } catch (e) {
+            return next(ApiError.internal('Ошибка при удалении продукта: ' + e.message));
+        }
+    }
 }
 
 module.exports = new ProductControl();
