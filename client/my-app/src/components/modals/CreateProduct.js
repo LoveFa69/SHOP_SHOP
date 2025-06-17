@@ -8,12 +8,11 @@ import { toast } from 'react-toastify';
 const CreateProduct = observer(({ show, onHide }) => {
     const { product } = useContext(Context);
 
-    // Состояния для полей формы
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
     const [oldPrice, setOldPrice] = useState('');
     const [quantity, setQuantity] = useState(0);
-    const [unit, setUnit] = useState('шт.'); // Состояние для единиц измерения
+    const [unit, setUnit] = useState('шт.');
     const [isSpecial, setIsSpecial] = useState(false);
     const [file, setFile] = useState(null);
     const [selectedType, setSelectedType] = useState(null);
@@ -29,17 +28,7 @@ const CreateProduct = observer(({ show, onHide }) => {
     }, [show, product]);
 
     const handleClose = () => {
-        setName('');
-        setPrice('');
-        setOldPrice('');
-        setQuantity(0);
-        setUnit('шт.'); // Сброс единиц измерения
-        setIsSpecial(false);
-        setFile(null);
-        setSelectedType(null);
-        setInfo([]);
-        setError('');
-        onHide();
+        setName(''); setPrice(''); setOldPrice(''); setQuantity(0); setUnit('шт.'); setIsSpecial(false); setFile(null); setSelectedType(null); setInfo([]); setError(''); onHide();
     };
 
     const addInfo = () => setInfo([...info, { title: '', description: '', number: Date.now() }]);
@@ -58,9 +47,7 @@ const CreateProduct = observer(({ show, onHide }) => {
             const formData = new FormData();
             formData.append('name', name.trim());
             formData.append('price', `${price}`);
-            if (oldPrice) {
-                formData.append('oldPrice', `${oldPrice}`);
-            }
+            if (oldPrice) formData.append('oldPrice', `${oldPrice}`);
             formData.append('quantity', `${quantity}`);
             formData.append('isSpecial', isSpecial);
             formData.append('unit', unit); // Добавляем единицу измерения в formData
@@ -97,16 +84,10 @@ const CreateProduct = observer(({ show, onHide }) => {
                         <Col md={6} className="mb-3"><Form.Control type="file" onChange={selectFile} /></Col>
                     </Row>
                     <Form.Group className="mb-3"><Form.Label>Название продукта</Form.Label><Form.Control placeholder="Введите название..." value={name} onChange={e => setName(e.target.value)} /></Form.Group>
-                    
                     <Row>
-                        <Col md={8}>
-                            <Form.Group className="mb-3"><Form.Label>Количество на складе</Form.Label><Form.Control type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value) || 0)} min={0} /></Form.Group>
-                        </Col>
-                        <Col md={4}>
-                            <Form.Group className="mb-3"><Form.Label>Ед. изм.</Form.Label><Form.Control placeholder="шт / кг / л" value={unit} onChange={e => setUnit(e.target.value)} /></Form.Group>
-                        </Col>
+                        <Col md={8}><Form.Group className="mb-3"><Form.Label>Количество на складе</Form.Label><Form.Control type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value) || 0)} min={0} /></Form.Group></Col>
+                        <Col md={4}><Form.Group className="mb-3"><Form.Label>Ед. изм.</Form.Label><Form.Control placeholder="шт / кг / л" value={unit} onChange={e => setUnit(e.target.value)} /></Form.Group></Col>
                     </Row>
-
                     <Row>
                         <Col md={6}><Form.Group className="mb-3"><Form.Label>Текущая цена</Form.Label><Form.Control placeholder="Например, 99" type="number" value={price} onChange={e => setPrice(Number(e.target.value) || '')} required /></Form.Group></Col>
                         <Col md={6}><Form.Group className="mb-3"><Form.Label>Старая цена (без скидки)</Form.Label><Form.Control placeholder="Необязательно" type="number" value={oldPrice} onChange={e => setOldPrice(Number(e.target.value) || '')} /></Form.Group></Col>
