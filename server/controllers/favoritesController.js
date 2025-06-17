@@ -13,6 +13,14 @@ class FavoritesController {
             }
 
             const user = await User.findByPk(userId);
+
+            // --- ДОБАВЛЕНА ПРОВЕРКА ---
+            // Если по какой-то причине пользователя с ID из токена нет в базе
+            if (!user) {
+                return next(ApiError.unauthorized('Пользователь не найден, пожалуйста, войдите заново'));
+            }
+            // -------------------------
+
             const hasFavorite = await user.hasFavoriteProduct(productId);
 
             if (hasFavorite) {
@@ -32,11 +40,19 @@ class FavoritesController {
         try {
             const userId = req.user.id;
             const user = await User.findByPk(userId);
-            const favorites = await user.getFavoriteProducts(); // Используем метод, созданный Sequelize
+
+            // --- ДОБАВЛЕНА ПРОВЕРКА ---
+            if (!user) {
+                return next(ApiError.unauthorized('Пользователь не найден, пожалуйста, войдите заново'));
+            }
+            // -------------------------
+
+            const favorites = await user.getFavoriteProducts();
             return res.json(favorites);
         } catch (e) {
             return next(ApiError.internal('Ошибка при получении избранных товаров'));
         }
     }
 }
+
 module.exports = new FavoritesController();
