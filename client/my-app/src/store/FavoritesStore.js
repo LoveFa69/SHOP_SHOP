@@ -15,6 +15,10 @@ class FavoritesStore {
         this.favoriteIds = new Set(ids);
     }
 
+    clearFavorites() {
+        this.favoriteIds.clear();
+    }
+
     async fetchFavoritesAction() {
         this.isLoading = true;
         try {
@@ -22,6 +26,8 @@ class FavoritesStore {
             this.setFavorites(data);
         } catch (e) {
             console.error("Не удалось загрузить избранное", e);
+            // При ошибке (например, 401), очищаем локальные данные
+            this.clearFavorites();
         } finally {
             this.isLoading = false;
         }
@@ -30,6 +36,7 @@ class FavoritesStore {
     async toggleFavoriteAction(productId) {
         try {
             const response = await toggleFavorite(productId);
+            // Оптимистичное обновление UI
             if (this.favoriteIds.has(productId)) {
                 this.favoriteIds.delete(productId);
             } else {
