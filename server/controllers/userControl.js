@@ -1,13 +1,16 @@
 const ApiError = require('../error/ApiError');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const jwt = 'jsonwebtoken';
 const { User, Basket } = require('../models/models');
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных кодов
 
+// Функция для генерации уникального реферального кода
 const generateReferralCode = () => {
+    // Берем первую часть UUID и переводим в верхний регистр. Например, 550E8400
     return uuidv4().split('-')[0].toUpperCase();
 };
 
+// Функция для генерации JWT токена
 const generateJwt = (id, email, role) => {
     return jwt.sign(
         { id, email, role },
@@ -22,6 +25,9 @@ class UserControl {
             const { email, password, referrerCode } = req.body;
             if (!email || !password) {
                 return next(ApiError.badRequest('Некорректный email или пароль'));
+            }
+            if (password.length < 6) {
+                return next(ApiError.badRequest('Пароль должен быть не менее 6 символов'));
             }
             const candidate = await User.findOne({ where: { email } });
             if (candidate) {
@@ -65,8 +71,8 @@ class UserControl {
             if (!user) {
                 return next(ApiError.badRequest('Пользователь с таким email не найден'));
             }
-            let comparePassword = bcrypt.compareSync(password, user.password);
-            if (!comparePassword) {
+            const isPasswordCorrect = bcrypt.compareSync(password, user.password);
+            if (!isPasswordCorrect) {
                 return next(ApiError.badRequest('Указан неверный пароль'));
             }
             const token = generateJwt(user.id, user.email, user.role);
@@ -81,49 +87,115 @@ class UserControl {
         return res.json({ token });
     }
 
-    async createAdmin(req, res, next) {
+    async getProfile(req, res, next) {
+        try {
+            const userId = req.user.id;
+            const userProfile = await User.findByPk(userId, {
+                attributes: ['id', 'email', 'role', 'referralCode']
+            });
+            if (!userProfile) {
+                return next(ApiError.notFound('Профиль пользователя не найден'));
+            }
+            return res.json(userProfile);
+        } catch (e) {
+            return next(ApiError.internal('Ошибка получения данных профиля'));
+        }
+    }
+
+    // --- НОВЫЙ МЕТОД ДЛЯ СМЕНЫ ПАРОЛЯ ---
+    async changePassword(req, res, next) {
+        try {
+            const { oldPassword, newPassword } = req.body;
+            const userId = req.user.id;
+
+            if (!oldPassword || !newPassword) {
+                return next(ApiError.badRequest('Не все поля заполнены'));
+            }
+            if (newPassword.length < 6) {
+                return next(ApiError.badRequest('Новый пароль должен быть не менее 6 символов'));
+            }
+
+            const user = await User.findByPk(userId);
+            if (!user) {
+                return next(ApiError.notFound('Пользователь не найден'));
+            }
+
+            const isOldPasswordCorrect = bcrypt.compareSync(oldPassword, user.password);
+            if (!isOldPasswordCorrect) {
+                return next(ApiError.badRequest('Старый пароль введен неверно'));
+            }
+
+            const hashPassword = await bcrypt.hash(newPassword, 5);
+            user.password = hashPassword;
+            await user.save();
+
+            return res.json({ message: 'Пароль успешно изменен!' });
+        } catch (e) {
+            return next(ApiError.internal('Ошибка при смене пароля: ' + e.message));
+        }
+    }
+
+    // --- Методы для администрирования ---
+
+     async createAdmin(req, res, next) {
         try {
             const { email, password } = req.body;
             if (!email || !password) {
                 return next(ApiError.badRequest('Некорректный email или пароль'));
             }
+            if (password.length < 6) {
+                return next(ApiError.badRequest('Пароль должен быть не менее 6 символов'));
+            }
+
             const candidate = await User.findOne({ where: { email } });
             if (candidate) {
                 return next(ApiError.badRequest('Пользователь с таким email уже существует'));
             }
+
             const hashPassword = await bcrypt.hash(password, 5);
-            const admin = await User.create({ email, role: 'ADMIN', password: hashPassword, referralCode: generateReferralCode() });
-            return res.json({ message: 'Администратор успешно создан', user: { id: admin.id, email: admin.email, role: admin.role } });
+            const admin = await User.create({
+                email,
+                role: 'ADMIN', // Явно указываем роль
+                password: hashPassword,
+                referralCode: generateReferralCode() // У админа тоже будет реф. код
+            });
+            
+            // Создаем админу корзину, на всякий случай
+            await Basket.create({ userId: admin.id });
+
+            return res.json({
+                message: 'Администратор успешно создан',
+                user: {
+                    id: admin.id,
+                    email: admin.email,
+                    role: admin.role
+                }
+            });
         } catch (e) {
-            next(ApiError.internal('Ошибка при создании администратора: ' + e.message));
+            return next(ApiError.internal('Ошибка при создании администратора: ' + e.message));
         }
     }
 
+    /**
+     * Получение списка всех пользователей с пагинацией.
+     * Доступно только администратору.
+     */
     async getAll(req, res, next) {
         try {
-            const users = await User.findAll({ attributes: ['id', 'email', 'role'], order: [['createdAt', 'DESC']] });
-            return res.json(users);
-        } catch (e) {
-            next(ApiError.internal('Ошибка при получении списка пользователей'));
-        }
-    }
+            // Добавляем пагинацию, как в productController
+            let { limit = 10, page = 1 } = req.query;
+            let offset = page * limit - limit;
 
-    // --- НОВЫЙ МЕТОД ---
-    async getProfile(req, res, next) {
-        try {
-            const userId = req.user.id;
-            const userProfile = await User.findByPk(userId, {
-                // Явно указываем, какие поля можно возвращать, чтобы не слить пароль
-                attributes: ['id', 'email', 'role', 'referralCode']
+            const users = await User.findAndCountAll({
+                attributes: ['id', 'email', 'role', 'createdAt'], // Никогда не возвращаем пароль
+                order: [['createdAt', 'DESC']],
+                limit,
+                offset
             });
 
-            if (!userProfile) {
-                return next(ApiError.notFound('Профиль пользователя не найден'));
-            }
-
-            return res.json(userProfile);
+            return res.json(users);
         } catch (e) {
-            return next(ApiError.internal('Ошибка получения данных профиля'));
+            return next(ApiError.internal('Ошибка при получении списка пользователей'));
         }
     }
 }

@@ -15,5 +15,6 @@ router.get('/all', authMiddleware, checkRole('ADMIN'), userController.getAll);
 
 // Новый роут для получения профиля
 router.get('/profile', authMiddleware, userController.getProfile);
+router.post('/change-password', authMiddleware, userController.changePassword);
 
 module.exports = router;

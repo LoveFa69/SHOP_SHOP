@@ -34,3 +34,8 @@ export const fetchProfile = async () => {
     const { data } = await $authHost.get('api/user/profile');
     return data;
 };
+
+export const changePassword = async (passwordData) => {
+    const { data } = await $authHost.post('api/user/change-password', passwordData);
+    return data;
+};
