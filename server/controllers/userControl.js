@@ -1,16 +1,13 @@
 const ApiError = require('../error/ApiError');
 const bcrypt = require('bcrypt');
-const jwt = 'jsonwebtoken';
+const jwt = require('jsonwebtoken'); // ИСПРАВЛЕННЫЙ ИМПОРТ
 const { User, Basket } = require('../models/models');
-const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных кодов
+const { v4: uuidv4 } = require('uuid');
 
-// Функция для генерации уникального реферального кода
 const generateReferralCode = () => {
-    // Берем первую часть UUID и переводим в верхний регистр. Например, 550E8400
     return uuidv4().split('-')[0].toUpperCase();
 };
 
-// Функция для генерации JWT токена
 const generateJwt = (id, email, role) => {
     return jwt.sign(
         { id, email, role },
@@ -33,7 +30,6 @@ class UserControl {
             if (candidate) {
                 return next(ApiError.badRequest('Пользователь с таким email уже существует'));
             }
-
             let referrerId = null;
             if (referrerCode) {
                 const referrer = await User.findOne({ where: { referralCode: referrerCode.toUpperCase() } });
@@ -43,7 +39,6 @@ class UserControl {
                     return next(ApiError.badRequest('Указанный реферальный код не найден'));
                 }
             }
-
             const hashPassword = await bcrypt.hash(password, 5);
             const user = await User.create({
                 email,
@@ -52,7 +47,6 @@ class UserControl {
                 referralCode: generateReferralCode(),
                 referrerId: referrerId
             });
-
             await Basket.create({ userId: user.id });
             const token = generateJwt(user.id, user.email, user.role);
             return res.json({ token });
@@ -102,42 +96,34 @@ class UserControl {
         }
     }
 
-    // --- НОВЫЙ МЕТОД ДЛЯ СМЕНЫ ПАРОЛЯ ---
     async changePassword(req, res, next) {
         try {
             const { oldPassword, newPassword } = req.body;
             const userId = req.user.id;
-
             if (!oldPassword || !newPassword) {
                 return next(ApiError.badRequest('Не все поля заполнены'));
             }
             if (newPassword.length < 6) {
                 return next(ApiError.badRequest('Новый пароль должен быть не менее 6 символов'));
             }
-
             const user = await User.findByPk(userId);
             if (!user) {
                 return next(ApiError.notFound('Пользователь не найден'));
             }
-
             const isOldPasswordCorrect = bcrypt.compareSync(oldPassword, user.password);
             if (!isOldPasswordCorrect) {
                 return next(ApiError.badRequest('Старый пароль введен неверно'));
             }
-
             const hashPassword = await bcrypt.hash(newPassword, 5);
             user.password = hashPassword;
             await user.save();
-
             return res.json({ message: 'Пароль успешно изменен!' });
         } catch (e) {
             return next(ApiError.internal('Ошибка при смене пароля: ' + e.message));
         }
     }
 
-    // --- Методы для администрирования ---
-
-     async createAdmin(req, res, next) {
+    async createAdmin(req, res, next) {
         try {
             const { email, password } = req.body;
             if (!email || !password) {
@@ -146,23 +132,18 @@ class UserControl {
             if (password.length < 6) {
                 return next(ApiError.badRequest('Пароль должен быть не менее 6 символов'));
             }
-
             const candidate = await User.findOne({ where: { email } });
             if (candidate) {
                 return next(ApiError.badRequest('Пользователь с таким email уже существует'));
             }
-
             const hashPassword = await bcrypt.hash(password, 5);
             const admin = await User.create({
                 email,
-                role: 'ADMIN', // Явно указываем роль
+                role: 'ADMIN',
                 password: hashPassword,
-                referralCode: generateReferralCode() // У админа тоже будет реф. код
+                referralCode: generateReferralCode()
             });
-            
-            // Создаем админу корзину, на всякий случай
             await Basket.create({ userId: admin.id });
-
             return res.json({
                 message: 'Администратор успешно создан',
                 user: {
@@ -176,23 +157,16 @@ class UserControl {
         }
     }
 
-    /**
-     * Получение списка всех пользователей с пагинацией.
-     * Доступно только администратору.
-     */
     async getAll(req, res, next) {
         try {
-            // Добавляем пагинацию, как в productController
             let { limit = 10, page = 1 } = req.query;
             let offset = page * limit - limit;
-
             const users = await User.findAndCountAll({
-                attributes: ['id', 'email', 'role', 'createdAt'], // Никогда не возвращаем пароль
+                attributes: ['id', 'email', 'role', 'createdAt'],
                 order: [['createdAt', 'DESC']],
                 limit,
                 offset
             });
-
             return res.json(users);
         } catch (e) {
             return next(ApiError.internal('Ошибка при получении списка пользователей'));
